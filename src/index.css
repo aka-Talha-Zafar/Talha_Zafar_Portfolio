@@ -1,0 +1,156 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Talha Zafar — Design System
+ * All colors HSL. Surfaces glass. Restrained glow.
+ */
+
+@layer base {
+  :root {
+    /* Core */
+    --background: 218 50% 4%;             /* #050810 */
+    --foreground: 210 40% 96%;
+
+    --card: 220 40% 6%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 220 40% 6%;
+    --popover-foreground: 210 40% 96%;
+
+    /* Electric blue */
+    --primary: 199 89% 60%;               /* #38BDF8 */
+    --primary-foreground: 218 50% 4%;
+    --primary-glow: 199 89% 60% / 0.35;
+
+    /* Soft violet */
+    --secondary: 234 89% 74%;             /* #818CF8 */
+    --secondary-foreground: 218 50% 4%;
+
+    /* Emerald — used sparingly */
+    --tertiary: 158 64% 52%;              /* #34D399 */
+    --tertiary-foreground: 218 50% 4%;
+
+    --muted: 220 20% 12%;
+    --muted-foreground: 220 10% 60%;
+
+    --accent: 234 89% 74%;
+    --accent-foreground: 210 40% 96%;
+
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 210 40% 96%;
+
+    --border: 220 20% 100% / 0.08;
+    --input: 220 20% 100% / 0.08;
+    --ring: 199 89% 60%;
+
+    --radius: 0.75rem;
+
+    /* Glass surface */
+    --surface: 0 0% 100% / 0.04;
+    --surface-strong: 0 0% 100% / 0.06;
+    --surface-border: 0 0% 100% / 0.08;
+    --surface-border-hover: 199 89% 60% / 0.4;
+
+    /* Gradients */
+    --gradient-text: linear-gradient(135deg, hsl(210 40% 98%) 0%, hsl(199 89% 80%) 100%);
+    --gradient-radial-glow: radial-gradient(circle at 50% 50%, hsl(199 89% 60% / 0.18) 0%, transparent 60%);
+    --gradient-violet-glow: radial-gradient(circle at 50% 50%, hsl(234 89% 74% / 0.18) 0%, transparent 60%);
+
+    /* Shadows */
+    --shadow-glow-blue: 0 0 30px -5px hsl(199 89% 60% / 0.45);
+    --shadow-glow-violet: 0 0 30px -5px hsl(234 89% 74% / 0.45);
+    --shadow-card: 0 20px 60px -20px hsl(218 50% 0% / 0.6);
+
+    /* Sidebar tokens (unused; kept for shared UI components) */
+    --sidebar-background: 220 40% 6%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 199 89% 60%;
+    --sidebar-primary-foreground: 218 50% 4%;
+    --sidebar-accent: 220 20% 12%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 0 0% 100% / 0.08;
+    --sidebar-ring: 199 89% 60%;
+  }
+
+  /* Always dark — no light mode for this brand */
+  .dark { color-scheme: dark; }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html {
+    scroll-behavior: smooth;
+    background-color: hsl(var(--background));
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.3);
+    color: hsl(var(--foreground));
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: hsl(var(--background)); }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--primary) / 0.5); }
+}
+
+@layer components {
+  .font-display { font-family: "Syne", system-ui, sans-serif; letter-spacing: -0.02em; }
+  .font-mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+
+  .glass {
+    background: hsl(var(--surface));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--surface-border));
+  }
+
+  .glass-strong {
+    background: hsl(var(--surface-strong));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid hsl(var(--surface-border));
+  }
+
+  .text-gradient {
+    background: var(--gradient-text);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .grid-blueprint {
+    background-image:
+      linear-gradient(hsl(var(--primary) / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--primary) / 0.06) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  }
+
+  .glow-blue { box-shadow: var(--shadow-glow-blue); }
+  .glow-violet { box-shadow: var(--shadow-glow-violet); }
+}
+
+@layer utilities {
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
