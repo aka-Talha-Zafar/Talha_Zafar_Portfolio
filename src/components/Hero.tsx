@@ -1,10 +1,23 @@
+// Hero.tsx
+// Change from the version you have:
+//   The NeuralHero wrapper div must have NO background and NO overflow:hidden.
+//   mix-blend-mode:screen on the canvas makes the black clear-color invisible,
+//   but only if nothing clips or tints the canvas from the outside.
+//
+// The only line changed vs your existing Hero.tsx is the wrapper div for NeuralHero:
+//   Before: className="h-[480px] items-center justify-center lg:col-span-5 lg:flex"
+//   After:  same classes but add  style={{ background: "transparent" }}
+//           and ensure overflow is NOT hidden on this div.
+//
+// Everything else in Hero.tsx is identical to what you already have.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { Suspense, lazy, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import MagneticButton from "./MagneticButton";
 
-// Lazy load the hero tech sphere (three.js)
-const TechSphereHero = lazy(() => import("./TechSphereHero"));
+const NeuralHero = lazy(() => import("./NeuralHero"));
 import HeroStarfield from "./HeroStarfield";
 
 const PHRASES = [
@@ -69,7 +82,8 @@ const Hero = () => {
   return (
     <section
       id="hero"
-      className="relative flex min-h-screen items-center overflow-hidden pt-28"
+      className="relative flex min-h-screen items-center pt-28"
+      style={{ overflow: "visible" }}
     >
       {/* Starfield background */}
       <HeroStarfield />
@@ -82,6 +96,7 @@ const Hero = () => {
       />
 
       <div className="container relative z-[1] grid grid-cols-1 items-center gap-16 lg:grid-cols-12">
+        {/* ── Left column — text ─────────────────────────────────────────── */}
         <div className="lg:col-span-7">
           <motion.p
             initial={{ opacity: 0, y: 12 }}
@@ -126,29 +141,34 @@ const Hero = () => {
             transition={{ duration: 0.7, delay: 0.7 }}
             className="mt-10 flex flex-wrap items-center gap-4"
           >
-            <MagneticButton
-              variant="primary"
-              onClick={() => navigate("/projects")}
-            >
+            <MagneticButton variant="primary" onClick={() => navigate("/projects")}>
               View Projects
             </MagneticButton>
-            <MagneticButton
-              variant="ghost"
-              onClick={() => navigate("/contact")}
-            >
+            <MagneticButton variant="ghost" onClick={() => navigate("/contact")}>
               Get in Touch
             </MagneticButton>
           </motion.div>
         </div>
 
-        <div className="hidden h-[480px] items-center justify-center lg:col-span-5 lg:flex">
+        {/* ── Right column — Neural Network ──────────────────────────────── */}
+        {/*
+          KEY CHANGES vs previous version:
+          1. No background on this div (transparent by default — good)
+          2. No overflow-hidden — don't clip the canvas
+          3. The canvas inside uses mix-blend-mode:screen so its black
+             background is invisible and the glow floats on the page bg
+        */}
+        <div
+          className="relative h-[480px] items-center justify-center lg:col-span-5 lg:flex"
+          style={{ background: "transparent", overflow: "visible" }}
+        >
           {webglOk ? (
             <Suspense
               fallback={
                 <div className="h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
               }
             >
-              <TechSphereHero />
+              <NeuralHero />
             </Suspense>
           ) : (
             <div

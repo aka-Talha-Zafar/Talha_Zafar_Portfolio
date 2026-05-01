@@ -1,0 +1,661 @@
+// NeuralHero.tsx
+// ─────────────────────────────────────────────────────────────────────────────
+//  ROOT FIX: Removed EffectComposer / UnrealBloomPass entirely.
+//
+//  WHY THE BOX APPEARED:
+//  UnrealBloomPass renders to internal RGB targets with no alpha channel.
+//  The final composite is always drawn onto a solid colour regardless of
+//  alpha:true on the renderer — there is no configuration that fixes this.
+//  The only solution is to not use bloom post-processing at all.
+//
+//  HOW GLOW IS ACHIEVED WITHOUT POST-PROCESSING:
+//  • alpha:true + setClearColor(0,0,0,0) → canvas is 100% transparent.
+//  • Node shader renders each node as a LARGE point (6× visual radius).
+//    Fragment = soft gaussian outer halo + sharp bright inner core in one pass.
+//  • THREE.AdditiveBlending: halos accumulate at dense clusters → natural glow.
+//  • Connections use AdditiveBlending → bright at line intersections.
+//  • Result: visually equivalent glow, composites over ANY page background.
+// ─────────────────────────────────────────────────────────────────────────────
+import { useEffect, useRef } from "react";
+import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  NOISE GLSL  (used by connection shader — identical to original)
+// ─────────────────────────────────────────────────────────────────────────────
+const NOISE_GLSL = `
+  vec3 mod289(vec3 x){return x-floor(x*(1./289.))*289.;}
+  vec4 mod289(vec4 x){return x-floor(x*(1./289.))*289.;}
+  vec4 permute(vec4 x){return mod289(((x*34.)+1.)*x);}
+  vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}
+  float snoise(vec3 v){
+    const vec2 C=vec2(1./6.,1./3.);const vec4 D=vec4(0.,.5,1.,2.);
+    vec3 i=floor(v+dot(v,C.yyy));vec3 x0=v-i+dot(i,C.xxx);
+    vec3 g=step(x0.yzx,x0.xyz);vec3 l=1.-g;
+    vec3 i1=min(g.xyz,l.zxy);vec3 i2=max(g.xyz,l.zxy);
+    vec3 x1=x0-i1+C.xxx;vec3 x2=x0-i2+C.yyy;vec3 x3=x0-D.yyy;i=mod289(i);
+    vec4 p=permute(permute(permute(i.z+vec4(0.,i1.z,i2.z,1.))+i.y+vec4(0.,i1.y,i2.y,1.))+i.x+vec4(0.,i1.x,i2.x,1.));
+    float n_=.142857142857;vec3 ns=n_*D.wyz-D.xzx;
+    vec4 j=p-49.*floor(p*ns.z*ns.z);vec4 x_=floor(j*ns.z);vec4 y_=floor(j-7.*x_);
+    vec4 x=x_*ns.x+ns.yyyy;vec4 y=y_*ns.x+ns.yyyy;vec4 h=1.-abs(x)-abs(y);
+    vec4 b0=vec4(x.xy,y.xy);vec4 b1=vec4(x.zw,y.zw);
+    vec4 s0=floor(b0)*2.+1.;vec4 s1=floor(b1)*2.+1.;vec4 sh=-step(h,vec4(0.));
+    vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+    vec3 p0=vec3(a0.xy,h.x);vec3 p1=vec3(a0.zw,h.y);vec3 p2=vec3(a1.xy,h.z);vec3 p3=vec3(a1.zw,h.w);
+    vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+    p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
+    vec4 m=max(.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.);
+    m*=m;return 42.*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+  }
+  float fbm(vec3 p,float time){
+    float v=0.,a=.5,f=1.;
+    for(int i=0;i<3;i++){v+=a*snoise(p*f+time*.2*f);a*=.5;f*=2.;}
+    return v;
+  }
+`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PALETTE  — fire / amber / orange  (identical to original)
+// ─────────────────────────────────────────────────────────────────────────────
+const PALETTE = [
+  new THREE.Color(0xf59e0b),
+  new THREE.Color(0xf97316),
+  new THREE.Color(0xdc2626),
+  new THREE.Color(0x7f1d1d),
+  new THREE.Color(0xfbbf24),
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  NODE CLASS  (identical to original)
+// ─────────────────────────────────────────────────────────────────────────────
+class Node {
+  position: THREE.Vector3;
+  connections: Array<{ node: Node; strength: number }>;
+  level: number;
+  type: number;
+  size: number;
+  distanceFromRoot: number;
+  clusterRef: Node | null;
+
+  constructor(pos: THREE.Vector3, level = 0, type = 0) {
+    this.position = pos;
+    this.connections = [];
+    this.level = level;
+    this.type = type;
+    this.size =
+      type === 0
+        ? THREE.MathUtils.randFloat(0.7, 1.2)
+        : THREE.MathUtils.randFloat(0.4, 0.9);
+    this.distanceFromRoot = 0;
+    this.clusterRef = null;
+  }
+  addConnection(node: Node, strength = 1) {
+    if (!this.isConnectedTo(node)) {
+      this.connections.push({ node, strength });
+      node.connections.push({ node: this, strength });
+    }
+  }
+  isConnectedTo(node: Node) {
+    return this.connections.some((c) => c.node === node);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  NETWORK GENERATION  (identical to original)
+// ─────────────────────────────────────────────────────────────────────────────
+function generateNetwork() {
+  const nodes: Node[] = [];
+  const rootNode = new Node(new THREE.Vector3(0, 0, 0), 0, 0);
+  rootNode.size = 1.5;
+  nodes.push(rootNode);
+
+  const NUM_CLUSTERS = 6;
+  const MAX_DIST = 10;
+  const clusterNodes: Node[] = [];
+
+  for (let c = 0; c < NUM_CLUSTERS; c++) {
+    const phi   = Math.acos(2 * Math.random() - 1);
+    const theta = 2 * Math.PI * Math.random();
+    const dist  = MAX_DIST * (0.3 + 0.7 * Math.random());
+    const pos   = new THREE.Vector3(
+      dist * Math.sin(phi) * Math.cos(theta),
+      dist * Math.sin(phi) * Math.sin(theta),
+      dist * Math.cos(phi)
+    );
+    const cn = new Node(pos, 1, 0);
+    cn.size = 1.2;
+    cn.distanceFromRoot = dist;
+    nodes.push(cn);
+    clusterNodes.push(cn);
+    rootNode.addConnection(cn, 0.9);
+  }
+
+  for (let i = 0; i < clusterNodes.length; i++) {
+    for (let j = i + 1; j < clusterNodes.length; j++) {
+      const d    = clusterNodes[i].position.distanceTo(clusterNodes[j].position);
+      const prob = 1.0 - d / (MAX_DIST * 2);
+      if (Math.random() < prob)
+        clusterNodes[i].addConnection(clusterNodes[j], 0.5 + 0.5 * (1 - d / (MAX_DIST * 2)));
+    }
+  }
+
+  const CLOUD_SIZE = 20;
+  for (const cluster of clusterNodes) {
+    const cloudR = 3.5 + Math.random() * 1.5;
+    for (let i = 0; i < CLOUD_SIZE; i++) {
+      const radius = cloudR * Math.pow(Math.random(), 0.5);
+      const dir = new THREE.Vector3(
+        THREE.MathUtils.randFloatSpread(2),
+        THREE.MathUtils.randFloatSpread(2),
+        THREE.MathUtils.randFloatSpread(2)
+      ).normalize();
+      const pos = cluster.position.clone().add(dir.multiplyScalar(radius));
+      const dfr = rootNode.position.distanceTo(pos);
+      const n = new Node(pos, 2 + Math.floor(radius / 3), Math.random() < 0.5 ? 1 : 0);
+      n.distanceFromRoot = dfr;
+      n.clusterRef = cluster;
+      nodes.push(n);
+      cluster.addConnection(n, 0.7 * (1 - radius / cloudR));
+
+      const nearby = nodes
+        .filter(
+          (x) => x !== n && x !== cluster && x.clusterRef === cluster &&
+                 x.position.distanceTo(pos) < cloudR * 0.4
+        )
+        .sort((a, b) => pos.distanceTo(a.position) - pos.distanceTo(b.position));
+      const connCount = Math.floor(Math.random() * 3);
+      for (let j = 0; j < Math.min(connCount, nearby.length); j++) {
+        const d = pos.distanceTo(nearby[j].position);
+        n.addConnection(nearby[j], 0.4 * (1 - d / (cloudR * 0.4)));
+      }
+    }
+  }
+
+  for (let i = 0; i < 15; i++) {
+    const c1 = clusterNodes[Math.floor(Math.random() * clusterNodes.length)];
+    let c2: Node;
+    do { c2 = clusterNodes[Math.floor(Math.random() * clusterNodes.length)]; } while (c2 === c1);
+    const bp = new THREE.Vector3()
+      .lerpVectors(c1.position, c2.position, 0.3 + Math.random() * 0.4)
+      .add(new THREE.Vector3(
+        THREE.MathUtils.randFloatSpread(5),
+        THREE.MathUtils.randFloatSpread(5),
+        THREE.MathUtils.randFloatSpread(5)
+      ));
+    const bridge = new Node(bp, 2, 0);
+    bridge.distanceFromRoot = rootNode.position.distanceTo(bp);
+    nodes.push(bridge);
+    c1.addConnection(bridge, 0.5);
+    c2.addConnection(bridge, 0.5);
+    const nearby = nodes.filter(
+      (x) => x !== bridge && x !== c1 && x !== c2 && x.position.distanceTo(bp) < 8
+    );
+    if (nearby.length > 0)
+      bridge.addConnection(nearby[Math.floor(Math.random() * nearby.length)], 0.4);
+  }
+
+  const outerNodes = nodes
+    .filter((n) => n.distanceFromRoot > MAX_DIST * 0.6)
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 10);
+
+  for (const outer of outerNodes) {
+    const segs = 2 + Math.floor(Math.random() * 2);
+    let prev = outer;
+    for (let i = 1; i <= segs; i++) {
+      const t  = i / (segs + 1);
+      const sp = outer.position.clone().multiplyScalar(1 - t * 0.8).add(
+        new THREE.Vector3(
+          THREE.MathUtils.randFloatSpread(4),
+          THREE.MathUtils.randFloatSpread(4),
+          THREE.MathUtils.randFloatSpread(4)
+        )
+      );
+      const sn = new Node(sp, outer.level, 0);
+      sn.distanceFromRoot = rootNode.position.distanceTo(sp);
+      nodes.push(sn);
+      prev.addConnection(sn, 0.6);
+      prev = sn;
+    }
+    const innerNodes = nodes.filter(
+      (n) => n.distanceFromRoot < MAX_DIST * 0.4 && n !== rootNode
+    );
+    if (innerNodes.length > 0)
+      prev.addConnection(innerNodes[Math.floor(Math.random() * innerNodes.length)], 0.5);
+  }
+
+  return nodes;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  UNIFORM FACTORY  (called fresh for each material to avoid sharing refs)
+// ─────────────────────────────────────────────────────────────────────────────
+const makePulseUniforms = () => ({
+  uTime:           { value: 0 },
+  uPulsePositions: { value: [new THREE.Vector3(1e4,1e4,1e4), new THREE.Vector3(1e4,1e4,1e4), new THREE.Vector3(1e4,1e4,1e4)] },
+  uPulseTimes:     { value: [-1e4, -1e4, -1e4] },
+  uPulseColors:    { value: [PALETTE[0].clone(), PALETTE[1].clone(), PALETTE[2].clone()] },
+  uPulseSpeed:     { value: 15.0 },
+  uBaseNodeSize:   { value: 0.5 },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  NODE SHADER  — shader-based glow replaces UnrealBloomPass
+//
+//  Point size is 6× the visible node radius.
+//  Fragment shader = gaussian outer halo + sharp inner core in one draw call.
+//  With AdditiveBlending, nearby halos stack → cluster glow looks like bloom.
+//  Pulse stays in palette colours (amber/orange), no white wash.
+// ─────────────────────────────────────────────────────────────────────────────
+const NODE_VERT = `
+  attribute float nodeSize;
+  attribute float nodeType;
+  attribute vec3  nodeColor;
+  attribute float distanceFromRoot;
+  uniform float   uTime;
+  uniform vec3    uPulsePositions[3];
+  uniform float   uPulseTimes[3];
+  uniform float   uPulseSpeed;
+  uniform float   uBaseNodeSize;
+  varying vec3    vColor;
+  varying float   vNodeType;
+  varying float   vDistanceFromRoot;
+  varying float   vPulseIntensity;
+
+  float pulseAt(vec3 wp, vec3 pp, float pt) {
+    if (pt < 0.0) return 0.0;
+    float t = uTime - pt;
+    if (t < 0.0 || t > 3.0) return 0.0;
+    float waveProx = abs(distance(wp, pp) - t * uPulseSpeed);
+    return smoothstep(2.0, 0.0, waveProx) * smoothstep(3.0, 0.0, t);
+  }
+
+  void main() {
+    vNodeType         = nodeType;
+    vColor            = nodeColor;
+    vDistanceFromRoot = distanceFromRoot;
+    vec3 wp           = (modelMatrix * vec4(position, 1.0)).xyz;
+
+    float pulse = 0.0;
+    for (int i = 0; i < 3; i++)
+      pulse += pulseAt(wp, uPulsePositions[i], uPulseTimes[i]);
+    vPulseIntensity = min(pulse, 1.0);
+
+    float breathe = 0.8 + 0.2 * sin(uTime * 0.8 + distanceFromRoot * 0.2);
+    vec4 mvp = modelViewMatrix * vec4(position, 1.0);
+
+    // 6× larger than visual radius — gives the halo space to spread
+    gl_PointSize = nodeSize * breathe * (1.0 + vPulseIntensity * 1.5)
+                   * uBaseNodeSize * 6.0 * (800.0 / -mvp.z);
+    gl_Position  = projectionMatrix * mvp;
+  }
+`;
+
+const NODE_FRAG = `
+  uniform float uTime;
+  uniform vec3  uPulseColors[3];
+  varying vec3  vColor;
+  varying float vNodeType;
+  varying float vDistanceFromRoot;
+  varying float vPulseIntensity;
+
+  void main() {
+    vec2  c = 2.0 * gl_PointCoord - 1.0;
+    float d = length(c);
+    if (d > 1.0) discard;
+
+    // Gaussian outer halo — wide, soft, dim (the "bloom" area)
+    float halo = exp(-d * d * 5.5) * 0.5;
+
+    // Sharp inner core — covers innermost ~18% of point radius
+    float core = pow(max(0.0, 1.0 - d * 5.5), 2.5) * 0.9;
+
+    float alpha = halo + core;
+
+    // Same time-oscillation as original
+    vec3 col = vColor * (0.8 + 0.2 * sin(uTime * 0.5 + vDistanceFromRoot * 0.3));
+
+    // Pulse: stays in amber/orange, no white flash
+    if (vPulseIntensity > 0.0) {
+      col = mix(col, uPulseColors[0] * 2.5, vPulseIntensity * 0.55);
+    }
+
+    // Core gets extra brightness to pop against the halo
+    col = col * (2.2 + core * 2.5);
+
+    // Secondary nodes slightly dimmed
+    if (vNodeType > 0.5) alpha *= 0.85;
+
+    gl_FragColor = vec4(col, alpha);
+  }
+`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CONNECTION SHADER  (identical to original)
+// ─────────────────────────────────────────────────────────────────────────────
+const CONN_VERT = `${NOISE_GLSL}
+  attribute vec3  startPoint;
+  attribute vec3  endPoint;
+  attribute float connectionStrength;
+  attribute float pathIndex;
+  attribute vec3  connectionColor;
+  uniform float   uTime;
+  uniform vec3    uPulsePositions[3];
+  uniform float   uPulseTimes[3];
+  uniform float   uPulseSpeed;
+  varying vec3    vColor;
+  varying float   vConnectionStrength;
+  varying float   vPulseIntensity;
+  varying float   vPathPosition;
+
+  float pulseAt(vec3 wp, vec3 pp, float pt) {
+    if (pt < 0.0) return 0.0;
+    float t = uTime - pt;
+    if (t < 0.0 || t > 3.0) return 0.0;
+    float waveProx = abs(distance(wp, pp) - t * uPulseSpeed);
+    return smoothstep(2.0, 0.0, waveProx) * smoothstep(3.0, 0.0, t);
+  }
+
+  void main() {
+    float t = position.x;
+    vPathPosition = t;
+    vec3 perp = normalize(cross(normalize(endPoint - startPoint), vec3(0,1,0)));
+    if (length(perp) < 0.1) perp = vec3(1,0,0);
+    vec3 mid = mix(startPoint, endPoint, 0.5) + perp * sin(t * 3.14159) * 0.1;
+    vec3 pos = mix(mix(startPoint, mid, t), mix(mid, endPoint, t), t);
+    float nt = uTime * 0.2;
+    pos += perp * fbm(vec3(pathIndex * 0.1, t * 0.5, nt), nt) * 0.1;
+    vec3 wp = (modelMatrix * vec4(pos, 1.0)).xyz;
+    float pulse = 0.0;
+    for (int i = 0; i < 3; i++)
+      pulse += pulseAt(wp, uPulsePositions[i], uPulseTimes[i]);
+    vPulseIntensity     = min(pulse, 1.0);
+    vColor              = connectionColor;
+    vConnectionStrength = connectionStrength;
+    gl_Position         = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+  }
+`;
+
+const CONN_FRAG = `
+  uniform float uTime;
+  uniform vec3  uPulseColors[3];
+  varying vec3  vColor;
+  varying float vConnectionStrength;
+  varying float vPulseIntensity;
+  varying float vPathPosition;
+
+  void main() {
+    float flow  = sin(vPathPosition * 20.0 - uTime * 3.0) * 0.5 + 0.5;
+    float flowI = 0.3 * flow * vConnectionStrength;
+    vec3  col   = vColor * (0.7 + 0.3 * sin(uTime * 0.5 + vPathPosition * 10.0));
+
+    // Palette-colour pulse, no white wash
+    if (vPulseIntensity > 0.0) {
+      col   = mix(col, uPulseColors[0] * 2.0, vPulseIntensity * 0.45);
+      flowI += vPulseIntensity * 0.15;
+    }
+
+    col *= (0.6 + flowI + vConnectionStrength * 0.4);
+    float alpha = 0.8 * vConnectionStrength + 0.2 * flow;
+    alpha       = mix(alpha, min(1.0, alpha * 1.6), vPulseIntensity);
+    gl_FragColor = vec4(col, alpha);
+  }
+`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+const NeuralHero = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const animIdRef    = useRef<number>();
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const container = containerRef.current;
+
+    let width  = container.clientWidth  || 480;
+    let height = container.clientHeight || 480;
+
+    // ── Scene (no background — canvas is transparent) ─────────────────────────
+    const scene = new THREE.Scene();
+
+    // ── Camera ────────────────────────────────────────────────────────────────
+    const camera = new THREE.PerspectiveCamera(55, width / height, 0.1, 1200);
+    camera.position.set(0, 2, 38);
+
+    // ── Renderer — truly transparent ──────────────────────────────────────────
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      powerPreference: "high-performance",
+    });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0); // RGBA(0,0,0,0) — fully transparent
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.domElement.style.cssText = "display:block;width:100%;height:100%;";
+    container.appendChild(renderer.domElement);
+
+    // ── Orbit Controls (identical to original) ────────────────────────────────
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping   = true;
+    controls.dampingFactor   = 0.05;
+    controls.rotateSpeed     = 0.5;
+    controls.enableZoom      = false;
+    controls.enablePan       = false;
+    controls.autoRotate      = true;
+    controls.autoRotateSpeed = 0.15;
+
+    // ── Build meshes ──────────────────────────────────────────────────────────
+    let nodesMesh:       THREE.Points       | null = null;
+    let connectionsMesh: THREE.LineSegments | null = null;
+
+    function buildVisualization() {
+      [nodesMesh, connectionsMesh].forEach((m) => {
+        if (!m) return;
+        scene.remove(m);
+        m.geometry.dispose();
+        (m.material as THREE.Material).dispose();
+      });
+
+      const nodes = generateNetwork();
+
+      // Node geometry
+      const nPos: number[] = [], nType: number[] = [], nSize: number[] = [],
+            nColor: number[] = [], nDist: number[] = [];
+
+      nodes.forEach((node) => {
+        nPos.push(node.position.x, node.position.y, node.position.z);
+        nType.push(node.type);
+        nSize.push(node.size);
+        nDist.push(node.distanceFromRoot);
+        const ci  = Math.min(node.level, PALETTE.length - 1);
+        const col = PALETTE[ci % PALETTE.length].clone();
+        col.offsetHSL(
+          THREE.MathUtils.randFloatSpread(0.05),
+          THREE.MathUtils.randFloatSpread(0.1),
+          THREE.MathUtils.randFloatSpread(0.1)
+        );
+        nColor.push(col.r, col.g, col.b);
+      });
+
+      const nGeo = new THREE.BufferGeometry();
+      nGeo.setAttribute("position",         new THREE.Float32BufferAttribute(nPos,   3));
+      nGeo.setAttribute("nodeType",         new THREE.Float32BufferAttribute(nType,  1));
+      nGeo.setAttribute("nodeSize",         new THREE.Float32BufferAttribute(nSize,  1));
+      nGeo.setAttribute("nodeColor",        new THREE.Float32BufferAttribute(nColor, 3));
+      nGeo.setAttribute("distanceFromRoot", new THREE.Float32BufferAttribute(nDist,  1));
+
+      const nUni = makePulseUniforms();
+      nUni.uPulseColors.value.forEach((c, i) => c.copy(PALETTE[i % PALETTE.length]));
+
+      const nMat = new THREE.ShaderMaterial({
+        uniforms:       nUni,
+        vertexShader:   NODE_VERT,
+        fragmentShader: NODE_FRAG,
+        transparent:    true,
+        depthWrite:     false,
+        blending:       THREE.AdditiveBlending,
+      });
+
+      nodesMesh = new THREE.Points(nGeo, nMat);
+      scene.add(nodesMesh);
+
+      // Connection geometry
+      const cPos: number[] = [], cStart: number[] = [], cEnd: number[] = [],
+            cStr: number[] = [], cColor: number[] = [], cIdx: number[] = [];
+      const processed = new Set<string>();
+      let pIdx = 0;
+
+      nodes.forEach((node, ni) => {
+        node.connections.forEach((conn) => {
+          const ci  = nodes.indexOf(conn.node);
+          if (ci === -1) return;
+          const key = `${Math.min(ni, ci)}-${Math.max(ni, ci)}`;
+          if (processed.has(key)) return;
+          processed.add(key);
+
+          const SEGS = 15;
+          for (let s = 0; s < SEGS; s++) {
+            const t = s / (SEGS - 1);
+            cPos.push(t, 0, 0);
+            cStart.push(node.position.x, node.position.y, node.position.z);
+            cEnd.push(conn.node.position.x, conn.node.position.y, conn.node.position.z);
+            cIdx.push(pIdx);
+            cStr.push(conn.strength);
+            const avgLevel = Math.min(
+              Math.floor((node.level + conn.node.level) / 2),
+              PALETTE.length - 1
+            );
+            const col = PALETTE[avgLevel % PALETTE.length].clone();
+            col.offsetHSL(
+              THREE.MathUtils.randFloatSpread(0.05),
+              THREE.MathUtils.randFloatSpread(0.1),
+              THREE.MathUtils.randFloatSpread(0.1)
+            );
+            cColor.push(col.r, col.g, col.b);
+          }
+          pIdx++;
+        });
+      });
+
+      const cGeo = new THREE.BufferGeometry();
+      cGeo.setAttribute("position",           new THREE.Float32BufferAttribute(cPos,   3));
+      cGeo.setAttribute("startPoint",         new THREE.Float32BufferAttribute(cStart, 3));
+      cGeo.setAttribute("endPoint",           new THREE.Float32BufferAttribute(cEnd,   3));
+      cGeo.setAttribute("connectionStrength", new THREE.Float32BufferAttribute(cStr,   1));
+      cGeo.setAttribute("connectionColor",    new THREE.Float32BufferAttribute(cColor, 3));
+      cGeo.setAttribute("pathIndex",          new THREE.Float32BufferAttribute(cIdx,   1));
+
+      const cUni = makePulseUniforms();
+      cUni.uPulseColors.value.forEach((c, i) => c.copy(PALETTE[i % PALETTE.length]));
+
+      const cMat = new THREE.ShaderMaterial({
+        uniforms:       cUni,
+        vertexShader:   CONN_VERT,
+        fragmentShader: CONN_FRAG,
+        transparent:    true,
+        depthWrite:     false,
+        blending:       THREE.AdditiveBlending,
+      });
+
+      connectionsMesh = new THREE.LineSegments(cGeo, cMat);
+      scene.add(connectionsMesh);
+    }
+
+    // ── Pulse on click / touch (identical to original) ────────────────────────
+    const raycaster = new THREE.Raycaster();
+    const pointer   = new THREE.Vector2();
+    const iPlane    = new THREE.Plane();
+    const iPoint    = new THREE.Vector3();
+    let   lastPulse = 0;
+    const clock     = new THREE.Clock();
+
+    function triggerPulse(cx: number, cy: number) {
+      if (!nodesMesh || !connectionsMesh) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x  =  ((cx - rect.left) / rect.width)  * 2 - 1;
+      pointer.y  = -((cy - rect.top)  / rect.height)  * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      iPlane.normal.copy(camera.position).normalize();
+      iPlane.constant =
+        -iPlane.normal.dot(camera.position) + camera.position.length() * 0.5;
+      if (!raycaster.ray.intersectPlane(iPlane, iPoint)) return;
+
+      const t = clock.getElapsedTime();
+      lastPulse = (lastPulse + 1) % 3;
+      const rc  = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+
+      [nodesMesh, connectionsMesh].forEach((m) => {
+        const mat = (m as any).material as THREE.ShaderMaterial;
+        if (!mat?.uniforms) return;
+        mat.uniforms.uPulsePositions.value[lastPulse].copy(iPoint);
+        mat.uniforms.uPulseTimes.value[lastPulse]      = t;
+        mat.uniforms.uPulseColors.value[lastPulse].copy(rc);
+      });
+    }
+
+    const onClick = (e: MouseEvent) => triggerPulse(e.clientX, e.clientY);
+    const onTouch = (e: TouchEvent) => {
+      e.preventDefault();
+      if (e.touches.length > 0)
+        triggerPulse(e.touches[0].clientX, e.touches[0].clientY);
+    };
+    renderer.domElement.addEventListener("click",      onClick);
+    renderer.domElement.addEventListener("touchstart", onTouch, { passive: false });
+
+    // ── Animation loop ────────────────────────────────────────────────────────
+    function animate() {
+      animIdRef.current = requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+
+      if (nodesMesh) {
+        (nodesMesh.material as THREE.ShaderMaterial).uniforms.uTime.value = t;
+        nodesMesh.rotation.y = Math.sin(t * 0.05) * 0.08; // original organic wobble
+      }
+      if (connectionsMesh) {
+        (connectionsMesh.material as THREE.ShaderMaterial).uniforms.uTime.value = t;
+        connectionsMesh.rotation.y = Math.sin(t * 0.05) * 0.08;
+      }
+
+      controls.update();
+      renderer.render(scene, camera); // direct render — no EffectComposer
+    }
+
+    // ── Resize ────────────────────────────────────────────────────────────────
+    function handleResize() {
+      width  = container.clientWidth  || 480;
+      height = container.clientHeight || 480;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    }
+
+    buildVisualization();
+    animate();
+    window.addEventListener("resize", handleResize);
+
+    // ── Cleanup ───────────────────────────────────────────────────────────────
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      renderer.domElement.removeEventListener("click",      onClick);
+      renderer.domElement.removeEventListener("touchstart", onTouch);
+      if (animIdRef.current) cancelAnimationFrame(animIdRef.current);
+      controls.dispose();
+      if (nodesMesh)       { nodesMesh.geometry.dispose();       (nodesMesh.material       as THREE.Material).dispose(); }
+      if (connectionsMesh) { connectionsMesh.geometry.dispose(); (connectionsMesh.material as THREE.Material).dispose(); }
+      renderer.dispose();
+      if (container.contains(renderer.domElement))
+        container.removeChild(renderer.domElement);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{ width: "100%", height: "100%", position: "relative" }}
+    />
+  );
+};
+
+export default NeuralHero;
