@@ -11,29 +11,19 @@ type Group = {
 
 const GROUPS: Group[] = [
   {
-    title: "Core ML / DL",
+    title: "Core Development",
     accent: "primary",
-    items: ["Python", "PyTorch", "TensorFlow", "Keras", "Scikit-learn", "NumPy", "Pandas"],
+    items: ["C", "C++", "Python", "Assembly", "Web & Mobile", "React.js", "React Native", "Django", "Flask", "FastAPI", "Tailwind", "HTML5", "CSS3", "Databases", "SQL", "MySQL", "MongoDB", "Firebase"],
   },
   {
-    title: "Computer Vision & Signals",
+    title: "AI/ML & Data",
     accent: "secondary",
-    items: ["OpenCV", "MediaPipe", "Grad-CAM", "Conv1D", "Transformer Encoder", "CNN"],
+    items: ["TensorFlow", "PyTorch", "Keras", "Scikit-learn", "OpenCV", "Pandas", "NumPy", "Matplotlib", "MediaPipe", "Grad-CAM", "Conv1D", "Transformer Encoder", "CNN", "Machine Learning", "Deep Learning", "Computer Vision", "Data Analysis"],
   },
   {
-    title: "Deployment & Infrastructure",
+    title: "Tools & Workflow",
     accent: "tertiary",
-    items: ["FastAPI", "Docker", "HuggingFace Spaces", "HuggingFace Hub", "REST APIs"],
-  },
-  {
-    title: "Frontend & 3D",
-    accent: "primary",
-    items: ["React", "TypeScript", "Vite", "Three.js", "TailwindCSS"],
-  },
-  {
-    title: "Tools",
-    accent: "secondary",
-    items: ["Git", "GitHub", "Linux", "Jupyter", "Kaggle", "VS Code", "Vercel"],
+    items: ["Git", "Docker", "Linux (Mint/Ubuntu)", "VSCode", "CLI-first workflows", "Jupyter", "Kaggle", "Vercel", "HuggingFace Spaces", "HuggingFace Hub", "REST APIs", "GitHub"],
   },
 ];
 

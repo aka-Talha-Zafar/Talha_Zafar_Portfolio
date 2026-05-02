@@ -42,15 +42,15 @@ const NeuralHero = () => {
     const opts = {
       range: 180,
       baseConnections: 3,
-      addedConnections: 5,
+      addedConnections: 4,
       baseSize: 5,
       minSize: 1,
       dataToConnectionSize: 0.4,
-      sizeMultiplier: 0.7,
-      allowedDist: 40,
-      baseDist: 40,
-      addedDist: 30,
-      connectionAttempts: 100,
+      sizeMultiplier: 0.75,
+      allowedDist: 36,
+      baseDist: 32,
+      addedDist: 24,
+      connectionAttempts: 90,
       dataToConnections: 1,
       baseSpeed: 0.04,
       addedSpeed: 0.05,
@@ -63,7 +63,7 @@ const NeuralHero = () => {
       rootColor: "hsla(0,60%,light%,alp)",
       endColor: "hsla(160,60%,light%,alp)",
       dataColor: "hsla(40,80%,light%,alp)",
-      wireframeWidth: 0.25,
+      wireframeWidth: 0.3,
       wireframeColor: "hsla(200,100%,55%,0.95)",
       depth: 250,
       focalLength: 250,
@@ -443,7 +443,7 @@ const NeuralHero = () => {
       if (!parent) return;
       const rect = parent.getBoundingClientRect();
       w = canvas.width = Math.max(rect.width, 400);
-      h = canvas.height = Math.max(rect.height, 480);
+      h = canvas.height = Math.max(rect.height, 48500);
       opts.vanishPoint.x = w / 2;
       opts.vanishPoint.y = h / 2;
       ctx.fillRect(0, 0, w, h);

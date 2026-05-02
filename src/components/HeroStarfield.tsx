@@ -63,45 +63,24 @@ const HeroStarfield = () => {
 
     // Interior labeled positions (inside neural structure - blue outlined area)
     const interiorLabeledPositions = [
-      // Upper interior area
-      { x: 0.55, y: 0.18 },
+      // Upper interior area - select positions only
       { x: 0.62, y: 0.15 },
-      { x: 0.58, y: 0.22 },
       { x: 0.65, y: 0.20 },
-      { x: 0.70, y: 0.18 },
-      { x: 0.68, y: 0.24 },
       // Upper-middle area
-      { x: 0.50, y: 0.30 },
       { x: 0.60, y: 0.32 },
       { x: 0.70, y: 0.35 },
-      { x: 0.65, y: 0.38 },
-      { x: 0.55, y: 0.40 },
-      { x: 0.48, y: 0.38 },
       // Center area (core of neural structure)
-      { x: 0.58, y: 0.45 },
       { x: 0.65, y: 0.48 },
-      { x: 0.72, y: 0.45 },
-      { x: 0.60, y: 0.52 },
       { x: 0.68, y: 0.50 },
-      { x: 0.52, y: 0.48 },
       // Lower-middle area
-      { x: 0.45, y: 0.58 },
       { x: 0.58, y: 0.62 },
       { x: 0.68, y: 0.60 },
-      { x: 0.62, y: 0.65 },
-      { x: 0.70, y: 0.68 },
       // Lower interior area
-      { x: 0.55, y: 0.72 },
       { x: 0.65, y: 0.75 },
       { x: 0.72, y: 0.72 },
-      { x: 0.60, y: 0.78 },
-      { x: 0.68, y: 0.80 },
       // Additional strategically placed interior stars
       { x: 0.52, y: 0.55 },
       { x: 0.75, y: 0.55 },
-      { x: 0.58, y: 0.68 },
-      { x: 0.72, y: 0.35 },
-      { x: 0.50, y: 0.45 },
     ];
 
     const computeNeuralCenter = () => {
@@ -263,7 +242,7 @@ const HeroStarfield = () => {
       }
 
       // Generate additional random stars INSIDE the neural structure for comprehensive coverage
-      const interiorStarCount = 15; // Reduced from 40 for lower density in center
+      const interiorStarCount = 5; // Reduced from 15 for lower density in center
       let interiorAttempts = 0;
       const maxInteriorAttempts = interiorStarCount * 5;
 

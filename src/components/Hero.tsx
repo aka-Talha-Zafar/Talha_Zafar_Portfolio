@@ -21,10 +21,10 @@ const NeuralHero = lazy(() => import("./NeuralHero"));
 import HeroStarfield from "./HeroStarfield";
 
 const PHRASES = [
-  "Computer Vision.",
+  "End-to-End Intelligent Systems.",
   "Deep Learning.",
-  "End-to-End ML Systems.",
-  "Intelligent Systems.",
+  "Natural Language Processing.",
+  "Computer Vision.",
 ];
 
 const Typewriter = () => {
@@ -104,8 +104,7 @@ const Hero = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground"
           >
-            <span className="mr-2 inline-block h-px w-6 bg-muted-foreground/60 align-middle" />
-            AI / ML Engineer
+            Machine Learning Engineer
           </motion.p>
 
           <motion.h1
@@ -132,7 +131,7 @@ const Hero = () => {
             transition={{ duration: 0.7, delay: 0.55 }}
             className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg"
           >
-            I design and deploy machine learning systems — from architecture to production.
+            Crafting intelligent systems from concept to production, Specializing in AI/ML development with a focus on Deep Learning & NLP architecture.
           </motion.p>
 
           <motion.div
