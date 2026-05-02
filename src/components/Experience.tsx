@@ -52,23 +52,17 @@ const Experience = () => {
   const railHeight = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
   return (
-    <section id="experience" className="relative py-32" ref={ref}>
-      <div className="container">
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground"
-        >
-          <span className="mr-2 inline-block h-px w-6 bg-muted-foreground/60 align-middle" />
-          04 / Trajectory
-        </motion.p>
-
+    <section id="experience" className="relative pt-20 pb-32" ref={ref}>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-emerald-900/10 via-emerald-900/5 to-transparent"
+      />
+      <div className="container relative">
         <motion.h2
           initial={{ opacity: 0, y: 16 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7, delay: 0.1 }}
-          className="font-display mt-4 text-4xl font-semibold tracking-tight md:text-6xl"
+          className="font-display mt-0 text-4xl font-semibold tracking-tight md:text-6xl"
         >
           Experience
         </motion.h2>

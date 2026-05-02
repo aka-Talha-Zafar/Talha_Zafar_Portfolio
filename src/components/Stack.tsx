@@ -13,17 +13,17 @@ const GROUPS: Group[] = [
   {
     title: "Core Development",
     accent: "primary",
-    items: ["C", "C++", "Python", "Assembly", "Web & Mobile", "React.js", "React Native", "Django", "Flask", "FastAPI", "Tailwind", "HTML5", "CSS3", "Databases", "SQL", "MySQL", "MongoDB", "Firebase"],
+    items: ["C", "C++", "Python", "Assembly", "FastAPI",  "HTML5", "CSS3", "Firebase"],
   },
   {
     title: "AI/ML & Data",
     accent: "secondary",
-    items: ["TensorFlow", "PyTorch", "Keras", "Scikit-learn", "OpenCV", "Pandas", "NumPy", "Matplotlib", "MediaPipe", "Grad-CAM", "Conv1D", "Transformer Encoder", "CNN", "Machine Learning", "Deep Learning", "Computer Vision", "Data Analysis"],
+    items: ["TensorFlow", "PyTorch", "Keras", "Scikit-learn", "OpenCV", "Pandas", "NumPy", "Matplotlib", "MediaPipe", "Transformer", "CNN", "Machine Learning", "Deep Learning", "Computer Vision", "Natural Language Processing", "Data Analysis"],
   },
   {
-    title: "Tools & Workflow",
+    title: "Tools",
     accent: "tertiary",
-    items: ["Git", "Docker", "Linux (Mint/Ubuntu)", "VSCode", "CLI-first workflows", "Jupyter", "Kaggle", "Vercel", "HuggingFace Spaces", "HuggingFace Hub", "REST APIs", "GitHub"],
+    items: ["Git", "Linux", "VSCode", "Cursor", "Jupyter", "Kaggle", "Vercel", "HuggingFace", "GitHub", "Jira",],
   },
 ];
 
@@ -39,27 +39,12 @@ const Stack = () => {
 
   return (
     <section id="stack" className="relative py-32" ref={ref}>
-      <div className="container">
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground"
-        >
-          <span className="mr-2 inline-block h-px w-6 bg-muted-foreground/60 align-middle" />
-          02 / Toolkit
-        </motion.p>
-
-        <motion.h2
-          initial={{ opacity: 0, y: 16 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.7, delay: 0.1 }}
-          className="font-display mt-4 text-4xl font-semibold tracking-tight md:text-6xl"
-        >
-          Stack
-        </motion.h2>
-
-        <div className="mt-16 grid grid-cols-1 items-center gap-16 lg:grid-cols-12">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-emerald-900/10 via-emerald-900/5 to-transparent"
+      />
+      <div className="container relative">
+        <div className="mt-0 grid grid-cols-1 items-center gap-16 lg:grid-cols-12">
           <div className="relative order-2 hidden h-[440px] items-center justify-center lg:order-1 lg:col-span-5 lg:flex">
             <Suspense fallback={<div className="h-72 w-72 rounded-full bg-primary/10 blur-3xl" />}>
               <StackSphere />

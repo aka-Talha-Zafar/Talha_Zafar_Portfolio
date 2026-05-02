@@ -219,7 +219,7 @@ const StackSphere = () => {
       {/* Info panel */}
       <div className="mt-3 text-center">
         <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground/80">
-          Tech Sphere
+          Tech Stack
         </p>
         {visible ? (
           <div className="mt-1">

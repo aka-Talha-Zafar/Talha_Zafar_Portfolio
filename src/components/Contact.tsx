@@ -58,13 +58,25 @@ const Contact = () => {
   };
 
   return (
-    <section id="contact" className="relative py-32" ref={ref}>
-      <div className="container">
+    <section id="contact" className="relative pt-20 pb-32" ref={ref}>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-emerald-900/10 via-emerald-900/5 to-transparent"
+      />
+      <div className="container relative">
+        <motion.h2
+          initial={{ opacity: 0, y: 16 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7, delay: 0.1 }}
+          className="font-display mt-0 text-4xl font-semibold tracking-tight md:text-6xl"
+        >
+          Contact
+        </motion.h2>
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8 }}
-          className="relative mx-auto max-w-4xl overflow-hidden rounded-3xl glass-strong p-10 md:p-16"
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="relative mx-auto mt-16 max-w-4xl overflow-hidden rounded-3xl glass-strong p-10 md:p-16"
         >
           <div
             aria-hidden
@@ -77,13 +89,10 @@ const Contact = () => {
           />
 
           <div className="relative text-center">
-            <p className="font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">
-              04 / Contact
-            </p>
-            <h2 className="font-display mt-4 text-4xl font-semibold tracking-tight md:text-6xl">
+            <h3 className="font-display text-4xl font-semibold tracking-tight md:text-6xl">
               Let's work together.
-            </h2>
-            <p className="mt-4 text-base text-muted-foreground md:text-lg">
+            </h3>
+            <p className="mt-3 text-base text-muted-foreground md:text-lg">
               Open to collaborations, opportunities, and conversations.
             </p>
 
