@@ -2,7 +2,7 @@ import Projects from "@/components/Projects";
 
 const ProjectsPage = () => {
   return (
-    <Projects />
+    <Projects showViewAllButton={false} />
   );
 };
 

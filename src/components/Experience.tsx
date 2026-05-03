@@ -4,6 +4,7 @@ import { useRef } from "react";
 type Role = {
   role: string;
   company: string;
+  companyUrl: string;
   duration: string;
   bullets: string[];
   stack: string[];
@@ -12,25 +13,27 @@ type Role = {
 const ROLES: Role[] = [
   {
     role: "React Native Developer — Intern",
-    company: "Rozee.PK",
-    duration: "2024 | Lahore, Pakistan",
+    company: "Naseeb Online Services (Pvt)Ltd - [Rozee.pk]",
+    companyUrl: "https://www.naseebnetworks.com/",
+    duration: "Aug 2024 - Sep 2024 | Lahore, Pakistan",
     bullets: [
-      "Developed and maintained cross-platform mobile application features using React Native and TypeScript.",
+      "Developed and maintained cross-platform mobile application features using React Native and JavaScript.",
       "Collaborated with the product team to implement UI improvements and optimize component performance.",
       "Integrated third-party APIs and handled state management across multiple application screens.",
     ],
-    stack: ["React Native", "TypeScript", "JavaScript", "REST APIs"],
+    stack: ["React Native", "JavaScript", "Firebase", "Github"],
   },
   {
     role: "React Native Intern (Remote)",
     company: "Chelan Technologies",
-    duration: "Jul 2024 – Jul 2025 | Washington, USA",
+    companyUrl: "https://chelan.cc/",
+    duration: "Jan 2025 – Mar 2025 | Washington, USA",
     bullets: [
-      "Developed mobile application features using React Native, TypeScript, and Firebase.",
+      "Developed mobile application features using React Native, JavaScript, and Firebase.",
       "Contributed to UI/UX improvements and built scalable front-end logic across multiple modules.",
       "Operated in a fully remote, internationally distributed engineering team.",
     ],
-    stack: ["React Native", "TypeScript", "Firebase"],
+    stack: ["React Native", "JavaScript", "Firebase", "Gitlab"],
   },
 ];
 
@@ -109,7 +112,14 @@ const Experience = () => {
                       <h3 className="font-display text-xl font-semibold text-foreground md:text-2xl">
                         {r.role}
                       </h3>
-                      <p className="mt-1 text-sm text-primary/90">{r.company}</p>
+                      <a
+                        href={r.companyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-flex text-sm text-primary/90 transition-colors hover:text-primary hover:underline"
+                      >
+                        {r.company}
+                      </a>
                     </div>
                     <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                       {r.duration}

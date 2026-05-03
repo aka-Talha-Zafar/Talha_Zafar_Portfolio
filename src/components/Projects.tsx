@@ -31,9 +31,9 @@ const PROJECTS_DATA: Project[] = [
     label: "Featured",
     shortDesc: "Bidirectional ASL translation between sign language and text.",
     summary:
-      "A compact summary of the project is shown here, with the full details available on the Projects page.",
+      "A full-stack AI platform enabling real-time bidirectional sign language translation and interactive learning using computer vision and NLP.",
     fullDesc: "SignVerse is a comprehensive ASL-to-text and text-to-ASL translation system that bridges communication gaps. Using advanced computer vision with MediaPipe for hand pose detection and deep learning models trained on extensive ASL datasets, it provides real-time translation. The FastAPI backend handles processing while the React frontend offers an intuitive interface with Three.js 3D visualizations. Deployed on Vercel, it processes video input and generates natural sign language animations or text transcriptions with high accuracy.",
-    stacks: ["Python", "PyTorch", "MediaPipe", "FastAPI", "React", "Three.js", "HuggingFace", "Vercel"],
+    stacks: ["Python", "PyTorch", "MediaPipe", "FastAPI", "React", "Transformer", "HuggingFace", "Vercel"],
     accent: "primary",
     hasWaveform: true,
     buttons: [
@@ -63,6 +63,42 @@ const Pill = ({ children }: { children: React.ReactNode }) => (
     {children}
   </span>
 );
+
+const getProjectActionClassName = (isPrimary?: boolean) =>
+  `inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-all ${
+    isPrimary
+      ? "border-primary/50 text-primary hover:bg-primary/10 hover:shadow-[0_0_24px_-6px_hsl(var(--primary)/0.6)]"
+      : "border-white/15 text-foreground/85 hover:border-white/30 hover:text-foreground"
+  }`;
+
+const ProjectActionButton = ({ button }: { button: ProjectButton }) => {
+  if (button.isPending) {
+    return (
+      <button
+        disabled
+        onClick={(event) => event.stopPropagation()}
+        className="inline-flex cursor-not-allowed items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-medium text-muted-foreground/60"
+      >
+        {button.label}
+        <span className="font-mono text-[10px]">— pending</span>
+      </button>
+    );
+  }
+
+  return (
+    <a
+      href={button.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(event) => event.stopPropagation()}
+      className={getProjectActionClassName(button.isPrimary)}
+    >
+      {button.label}
+      {button.icon === "github" && <Github className="h-3.5 w-3.5" />}
+      {button.isPrimary && <ArrowUpRight className="h-3.5 w-3.5" />}
+    </a>
+  );
+};
 
 const Waveform = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -184,30 +220,7 @@ const ProjectModal = ({ project, isOpen, onClose }: { project: Project | null; i
           
           <div className="flex flex-wrap gap-3 pt-4">
             {project.buttons.map((btn) => (
-              btn.isPending ? (
-                <button
-                  key={btn.label}
-                  disabled
-                  className="inline-flex cursor-not-allowed items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-medium text-muted-foreground/60"
-                >
-                  {btn.label}
-                  <span className="font-mono text-[10px]">— pending</span>
-                </button>
-              ) : (
-                <a
-                  key={btn.label}
-                  href={btn.href}
-                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-all ${
-                    btn.isPrimary
-                      ? "border-primary/50 text-primary hover:bg-primary/10 hover:shadow-[0_0_24px_-6px_hsl(var(--primary)/0.6)]"
-                      : "border-white/15 text-foreground/85 hover:border-white/30 hover:text-foreground"
-                  }`}
-                >
-                  {btn.label}
-                  {btn.icon === "github" && <Github className="h-3.5 w-3.5" />}
-                  {btn.isPrimary && <ArrowUpRight className="h-3.5 w-3.5" />}
-                </a>
-              )
+              <ProjectActionButton key={btn.label} button={btn} />
             ))}
           </div>
         </div>
@@ -243,30 +256,7 @@ const ProjectCard = ({ project, onClick }: { project: Project; onClick: () => vo
         </div>
         <div className="mt-auto pt-5 flex flex-wrap gap-3">
           {project.buttons.map((btn) => (
-            btn.isPending ? (
-              <button
-                key={btn.label}
-                disabled
-                className="inline-flex cursor-not-allowed items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-medium text-muted-foreground/60"
-              >
-                {btn.label}
-                <span className="font-mono text-[10px]">— pending</span>
-              </button>
-            ) : (
-              <a
-                key={btn.label}
-                href={btn.href}
-                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-all ${
-                  btn.isPrimary
-                    ? "group/btn border-primary/50 text-primary hover:bg-primary/10 hover:shadow-[0_0_24px_-6px_hsl(var(--primary)/0.6)]"
-                    : "border-white/15 text-foreground/85 hover:border-white/30 hover:text-foreground"
-                }`}
-              >
-                {btn.label}
-                {btn.icon === "github" && <Github className="h-3.5 w-3.5" />}
-                {btn.isPrimary && <ArrowUpRight className="h-3.5 w-3.5" />}
-              </a>
-            )
+            <ProjectActionButton key={btn.label} button={btn} />
           ))}
         </div>
       </div>
@@ -285,7 +275,7 @@ const Ghost = () => (
   </div>
 );
 
-const Projects = () => {
+const Projects = ({ showViewAllButton = true }: { showViewAllButton?: boolean }) => {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
   const [selectedProject, setSelectedProject] = useState<typeof PROJECTS_DATA[0] | null>(null);
@@ -322,14 +312,16 @@ const Projects = () => {
           ))}
           <Ghost />
         </motion.div>
-        <div className="mt-8 flex justify-center">
-          <a
-            href="/projects"
-            className="rounded-full border border-primary/60 bg-primary/5 px-6 py-3 text-sm font-medium text-primary transition-all duration-300 hover:bg-primary/15 hover:text-foreground hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.6)]"
-          >
-            View all projects
-          </a>
-        </div>
+        {showViewAllButton && (
+          <div className="mt-8 flex justify-center">
+            <a
+              href="/projects"
+              className="rounded-full border border-primary/60 bg-primary/5 px-6 py-3 text-sm font-medium text-primary transition-all duration-300 hover:bg-primary/15 hover:text-foreground hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.6)]"
+            >
+              View all projects
+            </a>
+          </div>
+        )}
       </div>
     </section>
     <ProjectModal
