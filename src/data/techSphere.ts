@@ -84,18 +84,19 @@ export const TECH_SPHERE: TechMarker[] = [
   },
 
   {
-    name: "FastAPI",
+    name: "GitHub",
     category: "Backend / Deployment",
     location: [-35, 150],
-    detail: "APIs · inference endpoints",
-    iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/fastapi/fastapi-original.svg",
+    detail: "Version control platform",
+    iconUrl:
+      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.726-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.758-1.333-1.758-1.089-.744.084-.729.084-.729 1.205.085 1.84 1.236 1.84 1.236 1.07 1.835 2.807 1.305 3.493.997.107-.775.418-1.306.762-1.606-2.665-.303-5.466-1.332-5.466-5.93 0-1.31.465-2.381 1.236-3.221-.124-.303-.535-1.527.117-3.176 0 0 1.008-.322 3.301 1.23a11.5 11.5 0 0 1 3-.404c1.02 0 2.041.138 3 .404 2.293-1.552 3.301-1.23 3.301-1.23.652 1.649.241 2.873.117 3.176.771.84 1.236 1.911 1.236 3.221 0 4.61-2.803 5.624-5.475 5.921.429.369.81 1.096.81 2.21 0 1.595-.014 2.878-.014 3.27 0 .322.218.694.825.576C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12Z'/%3E%3C/svg%3E",
   },
   {
-    name: "Docker",
+    name: "Jira",
     category: "Backend / Deployment",
     location: [-50, 280],
-    detail: "Reproducible deploys",
-    iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg",
+    detail: "Project planning and tracking",
+    iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/jira/jira-original.svg",
   },
   {
     name: "HuggingFace",
@@ -113,25 +114,25 @@ export const TECH_SPHERE: TechMarker[] = [
   },
 
   {
-    name: "React",
+    name: "HTML5",
     category: "Frontend / 3D",
     location: [40, 330],
-    detail: "UI · component systems",
-    iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg",
+    detail: "Web structure",
+    iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg",
   },
   {
-    name: "TypeScript",
+    name: "CSS3",
     category: "Frontend / 3D",
     location: [25, 120],
-    detail: "Typed frontend",
-    iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg",
+    detail: "Styling and layout",
+    iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg",
   },
   {
-    name: "TailwindCSS",
-    category: "Frontend / 3D",
+    name: "Firebase",
+    category: "Backend / Deployment",
     location: [0, 240],
-    detail: "Design system · styling",
-    iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg",
+    detail: "Backend services and auth",
+    iconUrl: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/firebase/firebase-original.svg",
   },
 
   {

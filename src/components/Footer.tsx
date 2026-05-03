@@ -1,11 +1,5 @@
-import { Github, Linkedin } from "lucide-react";
+import { Github, Instagram, Linkedin } from "lucide-react";
 import { Link } from "react-router-dom";
-
-const HF_ICON = (
-  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
-    <path d="M12 2a8 8 0 0 0-8 8c0 1.4.4 2.8 1 4l-1 6 6-1c1.2.6 2.6 1 4 1a8 8 0 0 0 0-16zm-3 8.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm6 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-3 5a4 4 0 0 1-3.5-2h7a4 4 0 0 1-3.5 2z" />
-  </svg>
-);
 
 const LINKS = [
   { href: "/about", label: "About" },
@@ -50,7 +44,7 @@ const Footer = () => (
             Talha Zafar
           </h3>
           <p className="mt-2 font-mono text-xs uppercase tracking-[0.2em] text-primary/80">
-            AI / ML Engineer
+            Machine Learning Engineer
           </p>
           <p className="mt-4 text-sm text-muted-foreground">Lahore, Pakistan</p>
         </div>
@@ -69,6 +63,9 @@ const Footer = () => (
               </li>
             ))}
           </ul>
+          <p className="mt-10 font-mono text-[11px] tracking-wider text-muted-foreground/60 md:text-center">
+            © 2026 | Talha Zafar 
+          </p>
         </div>
 
         {/* Right */}
@@ -77,28 +74,19 @@ const Footer = () => (
             Find me on
           </p>
           <div className="mt-4 flex gap-3 md:justify-end">
-            <SocialIcon href="https://github.com" label="GitHub">
+            <SocialIcon href="https://github.com/aka-Talha-Zafar" label="GitHub">
               <Github className="h-4 w-4" />
             </SocialIcon>
-            <SocialIcon href="https://linkedin.com" label="LinkedIn">
+            <SocialIcon href="https://www.linkedin.com/in/talha-zafar6783/" label="LinkedIn">
               <Linkedin className="h-4 w-4" />
             </SocialIcon>
-            <SocialIcon href="https://huggingface.co" label="HuggingFace">
-              {HF_ICON}
+            <SocialIcon href="https://www.instagram.com/talhazafar_2.0/" label="Instagram">
+              <Instagram className="h-4 w-4" />
             </SocialIcon>
           </div>
         </div>
       </div>
 
-      {/* Bottom strip */}
-      <div className="mt-14 flex flex-col items-start justify-between gap-3 border-t border-white/5 pt-6 sm:flex-row sm:items-center">
-        <p className="font-mono text-[11px] tracking-wider text-muted-foreground/60">
-          Built with React · Deployed on Vercel
-        </p>
-        <p className="font-mono text-[11px] tracking-wider text-muted-foreground/60">
-          Talha Zafar — 2026
-        </p>
-      </div>
     </div>
   </footer>
 );
