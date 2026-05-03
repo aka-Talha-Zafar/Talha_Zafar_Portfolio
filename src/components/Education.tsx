@@ -26,7 +26,7 @@ const KEY_SKILLS = [
   { name: "Matplotlib",   icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/matplotlib/matplotlib-original.svg" },
   { name: "PyTorch",      icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pytorch/pytorch-original.svg" },
   { name: "OpenCV",       icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/opencv/opencv-original.svg" },
-  { name: "MediaPipe",    icon: "/images/mediapipe.png", whiteBg: true },
+  { name: "MediaPipe",    icon: "/images/mediapipe.webp", whiteBg: true },
   { name: "Git",          icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg" },
   { name: "GitHub",       icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg", invert: true },
   { name: "Firebase",     icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/firebase/firebase-original.svg" },
@@ -69,11 +69,15 @@ const Education = () => {
                 {/* LGU placeholder logo (matching other cards) */}
                 <div className="flex items-start justify-center md:pt-1">
                   <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] shadow-[0_8px_24px_hsl(var(--primary)/0.06)] overflow-hidden">
-                    <img
-                      src="/images/lgu_logo.png"
-                      alt="Lahore Garrison University logo"
-                      className="h-full w-full rounded-full object-cover object-center"
-                    />
+                    <picture>
+                      <source srcSet="/images/lgu_logo.webp" type="image/webp" />
+                      <img
+                        src="/images/lgu_logo.webp"
+                        alt="Lahore Garrison University logo"
+                        loading="lazy"
+                        className="h-full w-full rounded-full object-cover object-center"
+                      />
+                    </picture>
                   </div>
                 </div>
 
