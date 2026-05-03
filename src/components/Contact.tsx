@@ -1,13 +1,12 @@
 import { motion, useInView } from "framer-motion";
 import { useRef, useState } from "react";
-import { Github, Linkedin, Copy, Check } from "lucide-react";
+import { Check, Copy, Github, Instagram, Linkedin } from "lucide-react";
 import { toast } from "sonner";
+import emailjs from "@emailjs/browser";
 
-const HF_ICON = (
-  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
-    <path d="M12 2a8 8 0 0 0-8 8c0 1.4.4 2.8 1 4l-1 6 6-1c1.2.6 2.6 1 4 1a8 8 0 0 0 0-16zm-3 8.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm6 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-3 5a4 4 0 0 1-3.5-2h7a4 4 0 0 1-3.5 2z" />
-  </svg>
-);
+const SERVICE_ID  = "service_5dggwbr";
+const TEMPLATE_ID = "template_w194q17";
+const PUBLIC_KEY  = "N-SYRklffcYVf6Gmo";
 
 const SocialButton = ({
   href,
@@ -31,9 +30,11 @@ const SocialButton = ({
 
 const Contact = () => {
   const ref = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
-  const email = "talhazafar7406@gmail.com";
-  const [copied, setCopied] = useState(false);
+  const email = "talhazafar402@gmail.com";
+  const [copied, setCopied]   = useState(false);
+  const [sending, setSending] = useState(false);
 
   const copy = async () => {
     try {
@@ -46,15 +47,37 @@ const Contact = () => {
     }
   };
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    toast.success("Message ready — opening your mail client");
+    if (sending) return;
+
     const fd = new FormData(e.currentTarget);
-    const subject = encodeURIComponent(`Portfolio inquiry — ${fd.get("name") || ""}`);
-    const body = encodeURIComponent(
-      `${fd.get("message") || ""}\n\n— ${fd.get("name") || ""} (${fd.get("email") || ""})`,
-    );
-    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+    const name    = (fd.get("name")    as string).trim();
+    const replyTo = (fd.get("email")   as string).trim();
+    const message = (fd.get("message") as string).trim();
+
+    setSending(true);
+    try {
+      await emailjs.send(
+        SERVICE_ID,
+        TEMPLATE_ID,
+        {
+          from_name: name,
+          reply_to:  replyTo,
+          message:   message,
+          name:      name,
+          email:     replyTo,
+        },
+        { publicKey: PUBLIC_KEY },
+      );
+      toast.success("Message sent! I'll get back to you soon.");
+      formRef.current?.reset();
+    } catch (err) {
+      console.error("EmailJS error:", err);
+      toast.error("Failed to send — please email me directly.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -108,19 +131,20 @@ const Contact = () => {
             </button>
 
             <div className="mt-10 flex justify-center gap-4">
-              <SocialButton href="https://github.com" label="GitHub">
+              <SocialButton href="https://github.com/aka-Talha-Zafar" label="GitHub">
                 <Github className="h-5 w-5" />
               </SocialButton>
-              <SocialButton href="https://linkedin.com" label="LinkedIn">
+              <SocialButton href="https://www.linkedin.com/in/talha-zafar6783" label="LinkedIn">
                 <Linkedin className="h-5 w-5" />
               </SocialButton>
-              <SocialButton href="https://huggingface.co" label="HuggingFace">
-                {HF_ICON}
+              <SocialButton href="https://www.instagram.com/talhazafar_2.0/" label="Instagram">
+                <Instagram className="h-5 w-5" />
               </SocialButton>
             </div>
           </div>
 
           <form
+            ref={formRef}
             onSubmit={onSubmit}
             className="relative mx-auto mt-14 grid max-w-2xl grid-cols-1 gap-4 md:grid-cols-2"
           >
@@ -142,14 +166,15 @@ const Contact = () => {
               name="message"
               rows={5}
               placeholder="Message"
-              className="md:col-span-2 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all duration-300 focus:border-primary/60 focus:bg-primary/5 focus:shadow-[0_0_24px_-8px_hsl(var(--primary)/0.6)] focus:outline-none"
+              className="md:col-span-2 resize-none rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all duration-300 focus:border-primary/60 focus:bg-primary/5 focus:shadow-[0_0_24px_-8px_hsl(var(--primary)/0.6)] focus:outline-none"
             />
             <div className="md:col-span-2 flex justify-end">
               <button
                 type="submit"
-                className="rounded-full border border-primary/60 bg-primary/5 px-6 py-3 text-sm font-medium text-primary transition-all duration-300 hover:bg-primary/15 hover:text-foreground hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.6)]"
+                disabled={sending}
+                className="rounded-full border border-primary/60 bg-primary/5 px-6 py-3 text-sm font-medium text-primary transition-all duration-300 hover:bg-primary/15 hover:text-foreground hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Send Message
+                {sending ? "Sending…" : "Send Message"}
               </button>
             </div>
           </form>
