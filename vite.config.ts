@@ -20,18 +20,7 @@ export default defineConfig({
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"],
   },
   build: {
-    rollupOptions: {
-      output: {
-       manualChunks(id: string) {
-          if (id.includes('node_modules')) {
-            if (id.includes('three') || id.includes('@react-three') || id.includes('cobe') || id.includes('@react-three/drei')) {
-              return 'three-vendor';
-            }
-            return 'vendor';
-          }
-        },
-      },
-    },
+    rollupOptions: {},
   },
   plugins: [
     react(),
