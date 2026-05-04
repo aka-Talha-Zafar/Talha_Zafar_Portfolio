@@ -22,13 +22,10 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks(id: string) {
+       manualChunks(id: string) {
           if (id.includes('node_modules')) {
             if (id.includes('three') || id.includes('@react-three') || id.includes('cobe') || id.includes('@react-three/drei')) {
               return 'three-vendor';
-            }
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor';
             }
             return 'vendor';
           }
